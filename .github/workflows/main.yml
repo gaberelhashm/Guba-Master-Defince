@@ -1,0 +1,47 @@
+name: Guba Master Defence CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # No external dependencies required (stdlib only)
+
+      - name: Syntax check
+        run: |
+          python -m py_compile guba.py
+          echo "Syntax OK"
+
+      - name: Basic import & structure test
+        run: |
+          python -c "
+          import ast
+          with open('guba.py', encoding='utf-8') as f:
+              source = f.read()
+          ast.parse(source)
+          print('AST parse successful')
+          assert 'def main' in source
+          assert 'VirusTotal' in source or 'virustotal' in source.lower()
+          print('Basic structure checks passed')
+          "
